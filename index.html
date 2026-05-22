@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Afspraakmail-generator</title>
+<style>
+  /*
+    Lettertypes: Nexa Black (titels) en Graphik (body).
+    Dit zijn licentiefonts. Als je de bestanden hebt, voeg dan @font-face regels toe:
+
+    @font-face {
+      font-family: 'Nexa';
+      font-weight: 900;
+      src: url('NexaBlack.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'Graphik';
+      font-weight: 300 500;
+      src: url('Graphik.woff2') format('woff2');
+    }
+
+    Zolang de bestanden er niet zijn valt de browser terug op de websafe alternatieven hieronder.
+  */
+
+  :root {
+    --ink: #1a1a1a;
+    --paper: #f7f6f4;
+    --cream: #edeae5;
+    --accent: #F15A24;
+    --accent-light: #f47a4f;
+    --muted: #7a7065;
+    --border: #d4cfc6;
+    --white: #ffffff;
+    --shadow: rgba(30,20,10,0.10);
+
+    --font-title: 'Nexa', 'Trebuchet MS', 'Arial Black', sans-serif;
+    --font-body:  'Graphik', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    padding: 60px 40px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 8px 40px var(--shadow);
+    width: 360px;
+    animation: fadeUp .5s ease both;
+  }
+  #login-screen .logo {
+    font-family: var(--font-title);
+    font-weight: 900;
+    font-size: 1.7rem;
+    color: var(--accent);
+    letter-spacing: .02em;
+  }
+  #login-screen p {
+    font-size: .85rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .field-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field-wrap label {
+    font-size: .75rem;
+    font-weight: 500;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  input[type="password"],
+  input[type="text"],
+  input[type="date"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .92rem;
+    color: var(--ink);
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(46,92,63,.12);
+  }
+
+  .error-msg {
+    font-size: .8rem;
+    color: #c0392b;
+    display: none;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    width: 100%;
+    padding: 11px 20px;
+    background: var(--accent);
+    color: var(--white);
+    border: none;
+    border-radius: 3px;
+    font-family: var(--font-body);
+    font-size: .92rem;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: .03em;
+    transition: background .2s, transform .1s;
+  }
+  .btn:hover { background: var(--accent-light); }
+  .btn:active { transform: scale(.98); }
+  .btn-outline {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-outline:hover { background: var(--accent); color: var(--white); }
+
+  /* ── MAIN APP ── */
+  #app {
+    display: none;
+    width: 100%;
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+  .container { max-width: 820px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  header .logo { font-family: var(--font-title); font-weight: 900; font-size: 1.5rem; color: var(--accent); }
+  header .subtitle { font-size: .8rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 36px 40px;
+    box-shadow: 0 2px 16px var(--shadow);
+    animation: fadeUp .4s ease both;
+  }
+  .card h2 {
+    font-family: var(--font-title);
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: var(--ink);
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--cream);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 28px;
+  }
+  .form-grid .full { grid-column: 1 / -1; }
+
+  /* ── COLLEGA DROPDOWN ── */
+  .collega-toggle {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    font-family: var(--font-body);
+    font-size: .92rem;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color .2s;
+    user-select: none;
+  }
+  .collega-toggle:hover { border-color: var(--accent); }
+  .collega-toggle.has-selection { color: var(--ink); }
+
+  .collega-panel {
+    display: none;
+    margin-top: 6px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--white);
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px var(--shadow);
+  }
+  .collega-panel.open { display: block; }
+  .collega-panel label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    font-size: .88rem;
+    cursor: pointer;
+    transition: background .15s;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink);
+  }
+  .collega-panel label:hover { background: var(--cream); }
+  .collega-panel input[type="checkbox"] {
+    width: 15px; height: 15px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  /* ── TIJDSTIP SCROLLWIEL ── */
+  .tijd-trigger {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    font-family: var(--font-body);
+    font-size: .92rem;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color .2s;
+    user-select: none;
+  }
+  .tijd-trigger:hover { border-color: var(--accent); }
+  .tijd-trigger.has-value { color: var(--ink); }
+
+  .tijd-popup {
+    display: none;
+    margin-top: 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--white);
+    box-shadow: 0 6px 28px var(--shadow);
+    padding: 16px;
+    position: relative;
+    z-index: 100;
+  }
+  .tijd-popup.open { display: block; }
+
+  .tijd-popup-label {
+    font-size: .7rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .wiel-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .wiel-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .wiel-col span {
+    font-size: .7rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .wiel {
+    height: 120px;
+    width: 60px;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    position: relative;
+  }
+  .wiel::-webkit-scrollbar { display: none; }
+
+  .wiel-item {
+    scroll-snap-align: center;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .95rem;
+    font-weight: 400;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color .15s, background .15s;
+    border-radius: 2px;
+  }
+  .wiel-item:hover { background: var(--cream); }
+  .wiel-item.selected {
+    color: var(--accent);
+    font-weight: 600;
+    background: #fde8df;
+  }
+
+  /* highlight bar achter het midden */
+  .wiel-wrap {
+    position: relative;
+  }
+  .wiel-wrap::before,
+  .wiel-wrap::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 40px;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .wiel-wrap::before { top: 0; background: linear-gradient(to bottom, var(--white), transparent); border-radius: 3px 3px 0 0; }
+  .wiel-wrap::after  { bottom: 0; background: linear-gradient(to top, var(--white), transparent); border-radius: 0 0 3px 3px; }
+
+  .wiel-separator {
+    font-size: 1.4rem;
+    color: var(--muted);
+    margin-top: 44px;
+    font-weight: 300;
+  }
+
+  .tijd-confirm {
+    width: 100%;
+    padding: 8px;
+    background: var(--accent);
+    color: var(--white);
+    border: none;
+    border-radius: 3px;
+    font-family: var(--font-body);
+    font-size: .85rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: background .2s;
+  }
+  .tijd-confirm:hover { background: var(--accent-light); }
+
+  .tijd-handmatig-toggle {
+    font-size: .78rem;
+    color: var(--muted);
+    text-align: center;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-top: 2px;
+  }
+  .tijd-handmatig-toggle:hover { color: var(--accent); }
+
+  .tijd-handmatig {
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .tijd-handmatig.open { display: block; }
+  .tijd-handmatig input {
+    padding: 8px 12px;
+    font-size: .9rem;
+    text-align: center;
+  }
+  .tijd-handmatig .hint {
+    font-size: .73rem;
+    color: var(--muted);
+    margin-top: 5px;
+    text-align: center;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  /* ── PREVIEW ── */
+  #preview-section {
+    margin-top: 32px;
+    display: none;
+    animation: fadeUp .4s ease both;
+  }
+  .preview-box {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 36px 40px;
+    font-size: .93rem;
+    line-height: 1.85;
+    color: var(--ink);
+    white-space: pre-wrap;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .preview-label {
+    font-family: var(--font-title);
+    font-weight: 900;
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .copy-bar {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    align-items: center;
+  }
+  .copy-toast {
+    font-size: .8rem;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .copy-toast.show { opacity: 1; }
+
+  .section-divider { height: 1px; background: var(--border); margin: 32px 0; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .card { padding: 24px 20px; }
+    .preview-box { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <div class="logo">Afspraakmail-generator</div>
+  <p>Voer het wachtwoord in om toegang te krijgen tot het afspraaksjabloon.</p>
+  <div class="field-wrap">
+    <label>Wachtwoord</label>
+    <input type="password" id="pw-input" placeholder="••••••••••••" autocomplete="current-password">
+    <span class="error-msg" id="pw-error">Onjuist wachtwoord. Probeer opnieuw.</span>
+  </div>
+  <button class="btn" onclick="checkPassword()">Inloggen</button>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+  <div class="container">
+    <header>
+      <span class="logo">Afspraakmail-generator</span>
+
+    </header>
+
+    <div class="card">
+      <h2>Vul de afspraakgegevens in</h2>
+      <div class="form-grid">
+
+        <!-- Naam klant -->
+        <div class="field-wrap full">
+          <label>Naam klant</label>
+          <input type="text" id="klant-naam" placeholder="bijv. Jan de Vries" oninput="updatePreview()">
+        </div>
+
+        <!-- Datum -->
+        <div class="field-wrap">
+          <label>Datum afspraak</label>
+          <input type="date" id="afspraak-datum" oninput="updatePreview()">
+        </div>
+
+        <!-- Tijdstip scrollwiel -->
+        <div class="field-wrap">
+          <label>Tijdstip</label>
+          <div class="tijd-trigger" id="tijd-trigger" onclick="toggleTijdPopup()">
+            <span id="tijd-display">Kies tijdstip...</span>
+            <span>▾</span>
+          </div>
+          <div class="tijd-popup" id="tijd-popup">
+            <div class="tijd-popup-label">Scroll om tijd te kiezen</div>
+            <div class="wiel-row">
+              <div class="wiel-col">
+                <span>uur</span>
+                <div class="wiel-wrap">
+                  <div class="wiel" id="wiel-uur"></div>
+                </div>
+              </div>
+              <div class="wiel-separator">:</div>
+              <div class="wiel-col">
+                <span>min</span>
+                <div class="wiel-wrap">
+                  <div class="wiel" id="wiel-min"></div>
+                </div>
+              </div>
+            </div>
+            <button class="tijd-confirm" onclick="confirmTijd()">Bevestig tijdstip</button>
+            <div class="tijd-handmatig-toggle" onclick="toggleHandmatig()">Of voer handmatig in</div>
+            <div class="tijd-handmatig" id="tijd-handmatig">
+              <input type="text" id="handmatig-tijd" placeholder="bijv. 13:37" maxlength="5" oninput="handleHandmatigInput(this)">
+              <div class="hint">Formaat: UU:MM</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collega's -->
+        <div class="field-wrap full">
+          <label>Aanwezige collega's (optioneel)</label>
+          <div class="collega-toggle" id="collega-toggle" onclick="toggleCollegaPanel()">
+            <span id="collega-label">Selecteer collega's...</span>
+            <span>▾</span>
+          </div>
+          <div class="collega-panel" id="collega-panel">
+            <label><input type="checkbox" value="Bart" onchange="updateCollegaLabel()"> Bart</label>
+            <label><input type="checkbox" value="Bob" onchange="updateCollegaLabel()"> Bob</label>
+            <label><input type="checkbox" value="Danny" onchange="updateCollegaLabel()"> Danny</label>
+            <label><input type="checkbox" value="Esmee" onchange="updateCollegaLabel()"> Esmee</label>
+            <label><input type="checkbox" value="Gita" onchange="updateCollegaLabel()"> Gita</label>
+            <label><input type="checkbox" value="Henoch" onchange="updateCollegaLabel()"> Henoch</label>
+            <label><input type="checkbox" value="Jaap" onchange="updateCollegaLabel()"> Jaap</label>
+            <label><input type="checkbox" value="Kevin" onchange="updateCollegaLabel()"> Kevin</label>
+            <label><input type="checkbox" value="Koen" onchange="updateCollegaLabel()"> Koen</label>
+            <label><input type="checkbox" value="Marc" onchange="updateCollegaLabel()"> Marc</label>
+            <label><input type="checkbox" value="Marcel" onchange="updateCollegaLabel()"> Marcel</label>
+            <label><input type="checkbox" value="Marije" onchange="updateCollegaLabel()"> Marije</label>
+            <label><input type="checkbox" value="Mark" onchange="updateCollegaLabel()"> Mark</label>
+            <label><input type="checkbox" value="Marleen" onchange="updateCollegaLabel()"> Marleen</label>
+            <label><input type="checkbox" value="Maud" onchange="updateCollegaLabel()"> Maud</label>
+            <label><input type="checkbox" value="Pascal" onchange="updateCollegaLabel()"> Pascal</label>
+            <label><input type="checkbox" value="Peter" onchange="updateCollegaLabel()"> Peter</label>
+            <label><input type="checkbox" value="Remco" onchange="updateCollegaLabel()"> Remco</label>
+            <label><input type="checkbox" value="Rick" onchange="updateCollegaLabel()"> Rick</label>
+            <label><input type="checkbox" value="Sander" onchange="updateCollegaLabel()"> Sander</label>
+            <label><input type="checkbox" value="Simon" onchange="updateCollegaLabel()"> Simon</label>
+            <label><input type="checkbox" value="Suze" onchange="updateCollegaLabel()"> Suze</label>
+            <label><input type="checkbox" value="Tamara" onchange="updateCollegaLabel()"> Tamara</label>
+            <label><input type="checkbox" value="Tim" onchange="updateCollegaLabel()"> Tim</label>
+            <label><input type="checkbox" value="Tom" onchange="updateCollegaLabel()"> Tom</label>
+          </div>
+        </div>
+
+        <!-- Doel -->
+        <div class="field-wrap full">
+          <label>Doel van de meeting</label>
+          <textarea id="meeting-doel" rows="2" placeholder="bijv. het bespreken van de jaarrekening 2024" oninput="updatePreview()"></textarea>
+        </div>
+
+        <!-- Duur -->
+        <div class="field-wrap">
+          <label>Duur van de afspraak</label>
+          <select id="duur" onchange="updatePreview()">
+            <option value="">Selecteer...</option>
+            <option value="0,5">0,5 uur</option>
+            <option value="1">1 uur</option>
+            <option value="1,5">1,5 uur</option>
+            <option value="2">2 uur</option>
+            <option value="2,5">2,5 uur</option>
+            <option value="3">3 uur</option>
+            <option value="3,5">3,5 uur</option>
+            <option value="4">4 uur</option>
+            <option value="4,5">4,5 uur</option>
+            <option value="5">5 uur</option>
+            <option value="5,5">5,5 uur</option>
+            <option value="6">6 uur</option>
+            <option value="6,5">6,5 uur</option>
+            <option value="7">7 uur</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="section-divider"></div>
+      <button class="btn" onclick="generateMail()">Stel mail samen →</button>
+    </div>
+
+    <!-- PREVIEW -->
+    <div id="preview-section">
+      <div class="preview-label">📧 Voorbeeld e-mail</div>
+      <div class="preview-box" id="preview-box"></div>
+      <div class="copy-bar">
+        <button class="btn" style="width:auto;padding:10px 24px;" id="copy-btn">Kopieer tekst</button>
+        <button class="btn btn-outline" style="width:auto;padding:10px 24px;" onclick="resetForm()">Nieuwe mail</button>
+        <span class="copy-toast" id="copy-toast">✓ Gekopieerd!</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── AUTH ──
+  function checkPassword() {
+    const pw = document.getElementById('pw-input').value;
+    if (pw === 'bekijkwebsite') {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      initWielen();
+    } else {
+      document.getElementById('pw-error').style.display = 'block';
+      document.getElementById('pw-input').value = '';
+      document.getElementById('pw-input').focus();
+    }
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') {
+      checkPassword();
+    }
+  });
+
+  // ── SCROLLWIELEN ──
+  let selectedHour = 9;
+  let selectedMin  = 0;
+  const minOptions = [0, 15, 30, 45];
+
+  function initWielen() {
+    const uurEl = document.getElementById('wiel-uur');
+    const minEl = document.getElementById('wiel-min');
+
+    // Spacers voor snap in midden
+    uurEl.innerHTML = '<div style="height:40px"></div>';
+    for (let h = 7; h <= 19; h++) {
+      const d = document.createElement('div');
+      d.className = 'wiel-item' + (h === selectedHour ? ' selected' : '');
+      d.textContent = String(h).padStart(2,'0');
+      d.dataset.val = h;
+      d.onclick = () => selectHour(h, d);
+      uurEl.appendChild(d);
+    }
+    uurEl.innerHTML += '<div style="height:40px"></div>';
+
+    minEl.innerHTML = '<div style="height:40px"></div>';
+    minOptions.forEach(m => {
+      const d = document.createElement('div');
+      d.className = 'wiel-item' + (m === selectedMin ? ' selected' : '');
+      d.textContent = String(m).padStart(2,'0');
+      d.dataset.val = m;
+      d.onclick = () => selectMin(m, d);
+      minEl.appendChild(d);
+    });
+    minEl.innerHTML += '<div style="height:40px"></div>';
+
+    // Scroll to initial position
+    scrollToSelected(uurEl, selectedHour, 7);
+    scrollToSelected(minEl, selectedMin, 0, minOptions);
+  }
+
+  function scrollToSelected(wiel, val, start, arr) {
+    let idx;
+    if (arr) {
+      idx = arr.indexOf(val);
+    } else {
+      idx = val - start;
+    }
+    wiel.scrollTop = idx * 40;
+  }
+
+  function selectHour(h, el) {
+    selectedHour = h;
+    document.querySelectorAll('#wiel-uur .wiel-item').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function selectMin(m, el) {
+    selectedMin = m;
+    document.querySelectorAll('#wiel-min .wiel-item').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  // Highlight nearest on scroll
+  document.addEventListener('scroll', function(){}, true);
+  function attachWielScrollListeners() {
+    ['wiel-uur','wiel-min'].forEach(id => {
+      const wiel = document.getElementById(id);
+      if (!wiel) return;
+      wiel.addEventListener('scroll', () => {
+        const idx = Math.round(wiel.scrollTop / 40);
+        const items = wiel.querySelectorAll('.wiel-item');
+        items.forEach((it, i) => {
+          it.classList.toggle('selected', i === idx);
+          if (i === idx) {
+            if (id === 'wiel-uur') selectedHour = parseInt(it.dataset.val);
+            else selectedMin = parseInt(it.dataset.val);
+          }
+        });
+      });
+    });
+  }
+
+  function toggleTijdPopup() {
+    const popup = document.getElementById('tijd-popup');
+    popup.classList.toggle('open');
+    if (popup.classList.contains('open')) {
+      // re-attach scroll listeners each time (safe)
+      attachWielScrollListeners();
+    }
+  }
+
+  function confirmTijd() {
+    const tijdStr = String(selectedHour).padStart(2,'0') + ':' + String(selectedMin).padStart(2,'0');
+    setTijd(tijdStr);
+    document.getElementById('tijd-popup').classList.remove('open');
+  }
+
+  function setTijd(str) {
+    document.getElementById('tijd-display').textContent = str;
+    document.getElementById('tijd-trigger').classList.add('has-value');
+    updatePreview();
+  }
+
+  function getTijd() {
+    const val = document.getElementById('tijd-display').textContent;
+    return (val === 'Kies tijdstip...') ? null : val;
+  }
+
+  function toggleHandmatig() {
+    const el = document.getElementById('tijd-handmatig');
+    el.classList.toggle('open');
+    if (el.classList.contains('open')) {
+      document.getElementById('handmatig-tijd').focus();
+    }
+  }
+
+  function handleHandmatigInput(input) {
+    let v = input.value.replace(/[^0-9:]/g,'');
+    // auto-insert colon
+    if (v.length === 2 && !v.includes(':')) v = v + ':';
+    input.value = v;
+    if (/^\d{1,2}:\d{2}$/.test(v)) {
+      const [hh, mm] = v.split(':').map(Number);
+      if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) {
+        setTijd(String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0'));
+      }
+    }
+  }
+
+  // Sluit tijd-popup bij klik buiten
+  document.addEventListener('click', function(e) {
+    const trigger = document.getElementById('tijd-trigger');
+    const popup   = document.getElementById('tijd-popup');
+    if (trigger && popup && !trigger.contains(e.target) && !popup.contains(e.target)) {
+      popup.classList.remove('open');
+    }
+  });
+
+  // ── COLLEGA PANEL ──
+  function toggleCollegaPanel() {
+    document.getElementById('collega-panel').classList.toggle('open');
+  }
+  document.addEventListener('click', function(e) {
+    const toggle = document.getElementById('collega-toggle');
+    const panel  = document.getElementById('collega-panel');
+    if (toggle && panel && !toggle.contains(e.target) && !panel.contains(e.target)) {
+      panel.classList.remove('open');
+    }
+  });
+
+  function getSelectedCollegas() {
+    return Array.from(document.querySelectorAll('#collega-panel input[type="checkbox"]:checked'))
+                .map(cb => cb.value);
+  }
+
+  function updateCollegaLabel() {
+    const sel = getSelectedCollegas();
+    const label  = document.getElementById('collega-label');
+    const toggle = document.getElementById('collega-toggle');
+    if (sel.length === 0) {
+      label.textContent = "Selecteer collega's...";
+      toggle.classList.remove('has-selection');
+    } else {
+      label.textContent = sel.join(', ');
+      toggle.classList.add('has-selection');
+    }
+    updatePreview();
+  }
+
+  // ── DATE FORMATTER ──
+  function formatDate(val) {
+    if (!val) return null;
+    const [y, m, d] = val.split('-');
+    const days   = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+    const months = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+    const date = new Date(y, m-1, d);
+    return `${days[date.getDay()]} ${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+  }
+
+  // ── GENERATE ──
+  function generateMail() {
+    updatePreview();
+    const section = document.getElementById('preview-section');
+    section.style.display = 'block';
+    setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  }
+
+  function updatePreview() {
+    const naam   = document.getElementById('klant-naam').value.trim() || '[naam klant]';
+    const datum  = formatDate(document.getElementById('afspraak-datum').value) || '[datum]';
+    const tijd   = getTijd() || '[tijdstip]';
+    const doel   = document.getElementById('meeting-doel').value.trim() || '[doel van de meeting]';
+    const duur   = document.getElementById('duur').value || '[duur]';
+    const collega = getSelectedCollegas();
+
+    let aanwezigheid = 'met mij';
+    if (collega.length === 1) {
+      aanwezigheid = `met mij en ${collega[0]}`;
+    } else if (collega.length === 2) {
+      aanwezigheid = `met mij, ${collega[0]} en ${collega[1]}`;
+    } else if (collega.length > 2) {
+      const last = collega[collega.length - 1];
+      const rest = collega.slice(0, -1).join(', ');
+      aanwezigheid = `met mij, ${rest} en ${last}`;
+    }
+
+    const mail =
+`Beste ${naam},
+
+Je hebt op ${datum} om ${tijd} een afspraak ${aanwezigheid} op ons kantoor in Zevenaar.
+
+Het doel van deze meeting is ${doel}. We hebben ${duur} uur gereserveerd voor deze afspraak.
+
+Praktische informatie:
+
+  • Locatie: Exa 59, 6902 KH Zevenaar.
+  • Parkeren: er is voldoende parkeergelegenheid aan de achterzijde van het pand.
+  • Ontvangst: bij aankomst kan je vragen naar Sander; hij haalt jullie op.
+
+Mochten er vooraf nog vragen zijn, laat het dan gerust weten. We kijken uit naar je komst!`;
+
+    document.getElementById('preview-box').innerText = mail;
+  }
+
+  // ── COPY (fallback-proof) ──
+  document.getElementById('copy-btn').addEventListener('click', function() {
+    const text = document.getElementById('preview-box').innerText;
+    const toast = document.getElementById('copy-toast');
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showToast).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
+
+    function fallbackCopy() {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { document.execCommand('copy'); showToast(); } catch(e) {}
+      document.body.removeChild(ta);
+    }
+
+    function showToast() {
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+  });
+
+  // ── RESET ──
+  function resetForm() {
+    document.getElementById('klant-naam').value = '';
+    document.getElementById('afspraak-datum').value = '';
+    document.getElementById('duur').value = '';
+    document.getElementById('meeting-doel').value = '';
+    document.querySelectorAll('#collega-panel input[type="checkbox"]').forEach(cb => cb.checked = false);
+    updateCollegaLabel();
+    document.getElementById('tijd-display').textContent = 'Kies tijdstip...';
+    document.getElementById('tijd-trigger').classList.remove('has-value');
+    document.getElementById('handmatig-tijd').value = '';
+    document.getElementById('preview-section').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
