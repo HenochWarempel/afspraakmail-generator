@@ -38,78 +38,6 @@
     background: var(--paper);
     color: var(--ink);
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* ── LOGIN ── */
-  #login-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 28px;
-    padding: 60px 40px;
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    box-shadow: 0 8px 40px var(--shadow);
-    width: 360px;
-    animation: fadeUp .5s ease both;
-  }
-  #login-screen .logo {
-    font-family: var(--font-title);
-    font-weight: 900;
-    font-size: 1.7rem;
-    color: var(--accent);
-    letter-spacing: .02em;
-  }
-  #login-screen p {
-    font-size: .85rem;
-    color: var(--muted);
-    text-align: center;
-    line-height: 1.6;
-  }
-
-  .field-wrap {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .field-wrap label {
-    font-size: .75rem;
-    font-weight: 500;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  input[type="password"],
-  input[type="text"],
-  input[type="date"],
-  select,
-  textarea {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    background: var(--paper);
-    font-family: 'DM Sans', sans-serif;
-    font-size: .92rem;
-    color: var(--ink);
-    transition: border-color .2s, box-shadow .2s;
-    outline: none;
-  }
-  input:focus, select:focus, textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(46,92,63,.12);
-  }
-
-  .error-msg {
-    font-size: .8rem;
-    color: #c0392b;
-    display: none;
   }
 
   /* ── BUTTONS ── */
@@ -136,9 +64,43 @@
   }
   .btn-outline:hover { background: var(--accent); color: var(--white); }
 
+  /* ── FORM FIELDS ── */
+  .field-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field-wrap label {
+    font-size: .75rem;
+    font-weight: 500;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  input[type="text"],
+  input[type="date"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .92rem;
+    color: var(--ink);
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(46,92,63,.12);
+  }
+
   /* ── MAIN APP ── */
   #app {
-    display: none;
     width: 100%;
     min-height: 100vh;
     padding: 40px 20px 80px;
@@ -455,18 +417,6 @@
 </head>
 <body>
 
-<!-- ── LOGIN ── -->
-<div id="login-screen">
-  <div class="logo">Afspraakmail-generator</div>
-  <p>Voer het wachtwoord in om toegang te krijgen tot het afspraaksjabloon.</p>
-  <div class="field-wrap">
-    <label>Wachtwoord</label>
-    <input type="password" id="pw-input" placeholder="••••••••••••" autocomplete="current-password">
-    <span class="error-msg" id="pw-error">Onjuist wachtwoord. Probeer opnieuw.</span>
-  </div>
-  <button class="btn" onclick="checkPassword()">Inloggen</button>
-</div>
-
 <!-- ── APP ── -->
 <div id="app">
   <div class="container">
@@ -609,25 +559,6 @@
 </div>
 
 <script>
-  // ── AUTH ──
-  function checkPassword() {
-    const pw = document.getElementById('pw-input').value;
-    if (pw === 'bekijkwebsite') {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      initWielen();
-    } else {
-      document.getElementById('pw-error').style.display = 'block';
-      document.getElementById('pw-input').value = '';
-      document.getElementById('pw-input').focus();
-    }
-  }
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') {
-      checkPassword();
-    }
-  });
-
   // ── SCROLLWIELEN ──
   let selectedHour = 9;
   let selectedMin  = 0;
@@ -688,7 +619,6 @@
   }
 
   // Highlight nearest on scroll
-  document.addEventListener('scroll', function(){}, true);
   function attachWielScrollListeners() {
     ['wiel-uur','wiel-min'].forEach(id => {
       const wiel = document.getElementById(id);
@@ -891,6 +821,9 @@ Mochten er vooraf nog vragen zijn, laat het dan gerust weten. Ik kijk uit naar j
     document.getElementById('preview-section').style.display = 'none';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  // ── INIT ──
+  initWielen();
 </script>
 </body>
 </html>
